@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 
 // WITHOMP PART
 double *process_withomp() {
-		clock_t start = clock();
+		double start = omp_get_wtime();
 		
 		int i, j;
 		double dt = 0.04, C = 16, K = 0.1, h = 6;
@@ -29,76 +29,73 @@ double *process_withomp() {
 		olddata = (double*)malloc(sizeof(double)*ARR_SZ);
 		newdata = (double*)malloc(sizeof(double)*ARR_SZ);
 		
-		#pragma omp parallel for
+		#pragma omp parallel for schedule(auto)
 		for(i = 0; i < ARR_SZ; i++){
 				data[i] = 1.0;
 		}
 		
-		#pragma omp parallel for
+		#pragma omp parallel for private(i,j) schedule(auto)
 		for(i = 0; i < PEAK_SZ; i++){
-				linspace[i] = -1.0 + delta * i;
+			linspace[i] = -1.0 + delta * i;
+			for(j = 0; j < PEAK_SZ; j++) {
+				x[i][j] = linspace[i];
+			}
 		}
 		
-		#pragma omp parallel for
+		#pragma omp parallel for private(i,j) schedule(auto)
 		for(i = 0; i < PEAK_SZ; i++){
-				for(j = 0; j < PEAK_SZ; j++){
-						x[i][j] = linspace[i];
-				}
+			for(j = 0; j < PEAK_SZ; j++){
+				data[(i+20)*GRID_SZ+j+20] += h * exp( -5 * (pow(x[i][j], 2 ) + pow(x[j][i], 2 )));
+			}
 		}
 		
-		#pragma omp parallel for
-		for(i = 0; i < PEAK_SZ; i++){
-				for(j = 0; j < PEAK_SZ; j++){
-						data[(i+20)*GRID_SZ+j+20] += h * exp( -5 * (pow(x[i][j], 2 ) + pow(x[j][i], 2 )));
-				}
-		}
-		
-		#pragma omp parallel for
+		#pragma omp parallel for schedule(auto)
 		for(i = 0; i < ARR_SZ; i++){
-				olddata[i] = data[i];
+			olddata[i] = data[i];
 		}
 		
-		#pragma omp barrier
+		
 			 
-	 	#pragma omp parallel for
 		for(i = 0; i < 20; i++){
-				
-				sequential_update_withomp( data, olddata, newdata, C, K, dt);
-				tmp = olddata;
-				olddata = data;
-				data = newdata;
-				newdata = tmp;
+			sequential_update_withomp( data, olddata, newdata, C, K, dt);
+			tmp = olddata;
+			olddata = data;
+			data = newdata;
+			newdata = tmp;
 		}
 		
 		
-		clock_t end = clock();
-		printf("with omp spend: %lu\n",end-start);
+		double end = omp_get_wtime();
+		printf("with omp spend: %f\n",end-start);
 		return data;
 }
 void sequential_update_withomp(double *data, double *olddata, double *newdata, double C, double K, double dt ) {
 		int i, j, add_i, sub_i, add_j, sub_j;
 		double pot;
-		for( i = 0; i < GRID_SZ; i++){
-				for( j = 0; j < GRID_SZ; j++){
-						add_i = i+1 >= GRID_SZ ? i : i+1;
-						add_j = j+1 >= GRID_SZ ? j : j+1;
-						sub_i = i-1 < 0 ? 0 : i-1;
-						sub_j = j-1 < 0 ? 0 : j-1;
-						pot = data[add_i*GRID_SZ+j]+
-									data[sub_i*GRID_SZ+j]+
-									data[add_j+i*GRID_SZ]+
-									data[sub_j+i*GRID_SZ]-
-									4*data[i*GRID_SZ+j];
-						newdata[i * GRID_SZ + j] = 
-								( pow(C * dt, 2) * pot * 2 + 4 * data[i * GRID_SZ + j] - olddata[i * GRID_SZ + j] *(2 - K * dt) ) / (2 + K * dt);
-				}
+		#pragma omp parallel for private(i,j,add_i,add_j,sub_i,sub_j,pot) schedule(auto)
+		for( i = 0; i < GRID_SZ; i++) {
+			for( j = 0; j < GRID_SZ; j++) {
+				add_i = i+1 >= GRID_SZ ? i : i+1;
+				add_j = j+1 >= GRID_SZ ? j : j+1;
+				sub_i = i-1 < 0 ? 0 : i-1;
+				sub_j = j-1 < 0 ? 0 : j-1;
+				pot = data[add_i*GRID_SZ+j]+
+					data[sub_i*GRID_SZ+j]+
+					data[add_j+i*GRID_SZ]+
+					data[sub_j+i*GRID_SZ]
+					-4*data[i*GRID_SZ+j];
+				newdata[i * GRID_SZ + j] = 
+							(pow(C * dt, 2) * pot * 2 + 4 * data[i * GRID_SZ + j] - olddata[i * GRID_SZ + j] 
+							* (2 - K * dt)) 
+							/ (2 + K * dt);
+			}
 		}
 }
 // WITHOMP PART END
 
 // WITHOUTOMP PART
 double *process_withoutomp() {
-		clock_t start = clock();
+		double start = omp_get_wtime();
 		int i, j;
 		double dt = 0.04, C = 16, K = 0.1, h = 6;
 		double *data, *olddata, *newdata, *tmp;
@@ -138,8 +135,8 @@ double *process_withoutomp() {
 				data = newdata;
 				newdata = tmp;
 		}
-		clock_t end = clock();
-		printf("without omp spend: %lu\n",end-start);
+		double end = omp_get_wtime();
+		printf("without omp spend: %f\n",end-start);
 		
 		return data;
 }
