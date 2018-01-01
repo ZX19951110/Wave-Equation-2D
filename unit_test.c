@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "wave_2d.h"
+#include "unit_test.h"
 
 int main(int argc, char *argv[]) {
 	
@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
 	printf("no wrong\n");
 }
 
+// WITHOMP PART
 double *process_withomp() {
 		clock_t start = clock();
 		
@@ -32,30 +33,34 @@ double *process_withomp() {
 		for(i = 0; i < ARR_SZ; i++){
 				data[i] = 1.0;
 		}
+		
 		#pragma omp parallel for
 		for(i = 0; i < PEAK_SZ; i++){
 				linspace[i] = -1.0 + delta * i;
 		}
+		
 		#pragma omp parallel for
 		for(i = 0; i < PEAK_SZ; i++){
 				for(j = 0; j < PEAK_SZ; j++){
 						x[i][j] = linspace[i];
 				}
 		}
+		
 		#pragma omp parallel for
 		for(i = 0; i < PEAK_SZ; i++){
 				for(j = 0; j < PEAK_SZ; j++){
 						data[(i+20)*GRID_SZ+j+20] += h * exp( -5 * (pow(x[i][j], 2 ) + pow(x[j][i], 2 )));
 				}
 		}
+		
 		#pragma omp parallel for
 		for(i = 0; i < ARR_SZ; i++){
 				olddata[i] = data[i];
 		}
 		
 		#pragma omp barrier
-		 
-	 
+			 
+	 	#pragma omp parallel for
 		for(i = 0; i < 20; i++){
 				
 				sequential_update_withomp( data, olddata, newdata, C, K, dt);
@@ -89,7 +94,9 @@ void sequential_update_withomp(double *data, double *olddata, double *newdata, d
 				}
 		}
 }
+// WITHOMP PART END
 
+// WITHOUTOMP PART
 double *process_withoutomp() {
 		clock_t start = clock();
 		int i, j;
@@ -155,3 +162,4 @@ void sequential_update_withoutomp(double *data, double *olddata, double *newdata
 				}
 		}
 }
+// WITHOUTOMP PART END
