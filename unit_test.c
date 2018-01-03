@@ -29,7 +29,7 @@ double *process_withomp() {
 		olddata = (double*)malloc(sizeof(double)*ARR_SZ);
 		newdata = (double*)malloc(sizeof(double)*ARR_SZ);
 		
-		#pragma omp parallel for schedule(auto)
+		#pragma omp parallel for private(i) schedule(auto)
 		for(i = 0; i < ARR_SZ; i++){
 				data[i] = 1.0;
 		}
@@ -42,6 +42,8 @@ double *process_withomp() {
 			}
 		}
 		
+		#pragma omp barrier
+		
 		#pragma omp parallel for private(i,j) schedule(auto)
 		for(i = 0; i < PEAK_SZ; i++){
 			for(j = 0; j < PEAK_SZ; j++){
@@ -49,14 +51,16 @@ double *process_withomp() {
 			}
 		}
 		
-		#pragma omp parallel for schedule(auto)
+		#pragma omp barrier
+		
+		#pragma omp parallel for private(i) schedule(auto)
 		for(i = 0; i < ARR_SZ; i++){
 			olddata[i] = data[i];
 		}
 		
 		
 			 
-		for(i = 0; i < 20; i++){
+		for(i = 0; i < 20; i++) {
 			sequential_update_withomp( data, olddata, newdata, C, K, dt);
 			tmp = olddata;
 			olddata = data;
