@@ -3,7 +3,7 @@
 #include <omp.h>
 #include <math.h>
 
-#define GRID_SZ 5000
+#define GRID_SZ 100
 #define ARR_SZ GRID_SZ * GRID_SZ
 #define PEAK_SZ 31
 
