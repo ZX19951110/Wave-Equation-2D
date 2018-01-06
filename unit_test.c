@@ -69,13 +69,11 @@ double *process_withomp1() {
 		#pragma omp barrier
 		
 		for(i = 0; i < 20; i++) {
-			
-				sequential_update_withomp1( data, olddata, newdata, C, K, dt);
-				tmp = olddata;
-				olddata = data;
-				data = newdata;
-				newdata = tmp;
-			
+			sequential_update_withomp1( data, olddata, newdata, C, K, dt);
+			tmp = olddata;
+			olddata = data;
+			data = newdata;
+			newdata = tmp;
 		}
 		
 		
@@ -86,8 +84,11 @@ double *process_withomp1() {
 void sequential_update_withomp1(double *data, double *olddata, double *newdata, double C, double K, double dt ) {
 		int i, j;
 		double pot;
+		#pragma omp parallel private(i,j,pot)
 		for( i = 0; i < GRID_SZ; i++) {
 			for( j = 0; j < GRID_SZ; j++) {
+				#pragma omp task
+				{
 				pot = data[(i+1 >= GRID_SZ ? i : i+1)*GRID_SZ+j]+
 						data[(i-1 < 0 ? 0 : i-1)*GRID_SZ+j]+
 						data[(j+1 >= GRID_SZ ? j : j+1)+i*GRID_SZ]+
@@ -97,7 +98,7 @@ void sequential_update_withomp1(double *data, double *olddata, double *newdata, 
 								(pow(C * dt, 2) * pot * 2 + 4 * data[i * GRID_SZ + j] - olddata[i * GRID_SZ + j] 
 								* (2 - K * dt)) 
 								/ (2 + K * dt);
-				
+				}
 			}
 		}
 }
