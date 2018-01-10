@@ -109,10 +109,11 @@ double *process_withompusingfor() {
 		
 		#pragma omp parallel
 		{
-			#pragma omp parallel for private(i) schedule(auto)
+			#pragma omp for private(i) schedule(auto)
 			for(i = 0; i < ARR_SZ; i++) {
 				olddata[i] = data[i] = 1.0;
 			}
+			
 			
 			#pragma omp for private(i,j) schedule(auto)
 			for(i = 0; i < PEAK_SZ; i++){
@@ -121,6 +122,8 @@ double *process_withompusingfor() {
 					x[i][j] = linspace[i];
 				}
 			}
+			
+			#pragma omp barrier
 			
 			#pragma omp for private(i,j) schedule(auto)
 			for(i = 0; i < PEAK_SZ; i++){
