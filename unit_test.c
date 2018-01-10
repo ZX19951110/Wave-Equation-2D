@@ -42,7 +42,7 @@ double *process_withompusingtask() {
 			{
 				#pragma omp task
 				for(i = 0; i < ARR_SZ; i++) {
-					data[i] = 1.0;
+					olddata[i] = data[i] = 1.0;
 				}
 				
 				#pragma omp taskwait
@@ -60,15 +60,10 @@ double *process_withompusingtask() {
 				#pragma omp task
 				for(i = 0; i < PEAK_SZ; i++){
 					for(j = 0; j < PEAK_SZ; j++){
-						data[(i+20)*GRID_SZ+j+20] += h * exp( -5 * (pow(x[i][j], 2 ) + pow(x[j][i], 2 )));
+						olddata[(i+20)*GRID_SZ+j+20] = data[(i+20)*GRID_SZ+j+20] += h * exp( -5 * (pow(x[i][j], 2 ) + pow(x[j][i], 2 )));
 					}
 				}
 				#pragma omp taskwait
-				
-				#pragma omp task
-				for(i = 0; i < ARR_SZ; i++){
-					olddata[i] = data[i];
-				}
 				
 			}
 		}
@@ -116,7 +111,7 @@ double *process_withompusingfor() {
 		{
 			#pragma omp parallel for private(i) schedule(auto)
 			for(i = 0; i < ARR_SZ; i++) {
-					data[i] = 1.0;
+				olddata[i] = data[i] = 1.0;
 			}
 			
 			#pragma omp for private(i,j) schedule(auto)
@@ -127,17 +122,11 @@ double *process_withompusingfor() {
 				}
 			}
 			
-			
 			#pragma omp for private(i,j) schedule(auto)
 			for(i = 0; i < PEAK_SZ; i++){
 				for(j = 0; j < PEAK_SZ; j++){
-					data[(i+20)*GRID_SZ+j+20] += h * exp( -5 * (pow(x[i][j], 2 ) + pow(x[j][i], 2 )));
+					olddata[(i+20)*GRID_SZ+j+20] = data[(i+20)*GRID_SZ+j+20] += h * exp( -5 * (pow(x[i][j], 2 ) + pow(x[j][i], 2 )));
 				}
-			}
-			
-			#pragma omp for private(i) schedule(auto)
-			for(i = 0; i < ARR_SZ; i++){
-				olddata[i] = data[i];
 			}
 		}
 		for(i = 0; i < TIMES; i++) {
